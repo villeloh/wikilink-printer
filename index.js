@@ -1,51 +1,65 @@
 import axios from 'axios';
+import { JSDOM } from 'jsdom';
 
-const BASE_URL = 'https://en.wikipedia.org/w/api.php?';
+const BASE_URL = 'https://en.wikipedia.org/wiki/';
 
-// to avoid excessive requests
-const cache = {};
+// to avoid excessive requests (if we had a server and not just a single file to run)
+const linkCache = {};
+
+const filterNonBodyElements = (linkElements) => {
+  if (!linkElements) return null
+  
+return Array.from(linkElements).filter(linkEl => {
+    const link = linkEl.getAttribute('href');
+    const exclusions = [
+        '(disambiguation)',
+        '.jpg',
+        'File:',
+        'Wikipedia:',
+        '#cite'
+    ];
+    const parentElements = [
+        linkEl.closest('figcaption'),
+        linkEl.closest('table'),
+        linkEl.closest('.sidebar-caption'),
+        linkEl.closest('li'),
+        linkEl.closest('.mbox-text-span'),
+        linkEl.closest('.hatnote')
+    ];
+    return !exclusions.some(exclusion => link?.includes(exclusion)) 
+    && !parentElements.some(parent => !!parent);
+});
+}
 
 const getLink = async (articleUrl, linkIndex) => {
   try {
-    let extract;
+    let linkElements;
 
     // Check if article is already in cache
-    if (cache[articleUrl]) {
-      extract = cache[articleUrl];
+    if (linkCache[articleUrl]) {
+      linkElements = linkCache[articleUrl];
     } else {
-      const params = new URLSearchParams({
-        action: 'query',
-        format: 'json',
-        titles: articleUrl,
-        prop: 'extracts',
-        exintro: 'true'
-      });
+      const url = `${BASE_URL}${articleUrl}`;
+      const { data } = await axios.get(url);
 
-      const { data } = await axios.get(`${BASE_URL}${params.toString()}`, {
-        headers: { 'Api-User-Agent': 'Ville_L' }
-      });
-      const pages = data?.query?.pages;
-      if (!pages) return null;
-      const firstPage = Object.values(pages)[0];
-      extract = firstPage?.extract;
-      
-      cache[articleUrl] = extract;
+      const dom = new JSDOM(data);
+      const document = dom.window.document;
+      const contentDiv = document.querySelector('#mw-content-text'); // Select only the main content
+      linkElements = filterNonBodyElements(contentDiv?.querySelectorAll('a'));
+
+      linkCache[articleUrl] = linkElements;
     }
-
-    const dom = new DOMParser();
-    const document = dom.parseFromString(extract, 'text/html');
-    const links = document.querySelectorAll('a');
-
-    if (links.length === 0 || linkIndex >= links.length) return null;
-    const linkElement = links[linkIndex];
+    if (!linkElements || linkElements.length === 0 || linkIndex >= linkElements.length) return null;
     
-    // handle relative and top-level links
-    return linkElement.getAttribute('href')?.startsWith('/') ?
-      `https://en.wikipedia.org${linkElement.getAttribute('href')}` : 
-      linkElement.getAttribute('href');
+    const linkElement = linkElements[linkIndex];
+    const link = linkElement.getAttribute('href');
+
+    // the returned links contain an extra '/wiki/' for some reason
+    const cleanedLink = link?.startsWith('/wiki/') ? link.substring(6) : link
+    return cleanedLink;
   } catch (error) {
     console.error(`Failed to fetch article: ${error}`)
-    return null
+    return null;
   }
 };
 
@@ -54,12 +68,16 @@ const printLink = (link, indentation) => {
   console.log(`${spaces}${link}`);
 };
 
+const verifyNumbers = (...args) => {
+  return args.every(arg => typeof arg === 'number');
+}
+
 const printLinkTree = async (articleUrl, linkDepth = 1, followLinks = 1, indentation = 0) => {
   if (!articleUrl || typeof articleUrl !== 'string') {
     console.log('Error! Call printLinkTree() with the url-name of a Wikipedia article.');
     return;
   }
-  if (typeof linkDepth !== 'number' || typeof followLinks !== 'number') {
+  if (!verifyNumbers(linkDepth, followLinks, indentation)) {
     console.log('Error! Arguments after the first one must be numbers.');
     return;
   }
