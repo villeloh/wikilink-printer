@@ -11,7 +11,7 @@ const linkCache = {};
 const filterNonBodyElements = (linkElements) => {
   if (!linkElements) return null
   
-return Array.from(linkElements).filter(linkEl => {
+  return Array.from(linkElements).filter(linkEl => {
     const link = linkEl.getAttribute('href');
     const exclusions = [
         '(disambiguation)',
@@ -31,7 +31,7 @@ return Array.from(linkElements).filter(linkEl => {
     ];
     return !exclusions.some(exclusion => link?.includes(exclusion)) 
     && !parentElements.some(parent => !!parent);
-});
+  });
 };
 
 const getWikiLink = async (articleUrl, linkIndex) => {
