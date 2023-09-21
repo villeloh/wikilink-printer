@@ -39,6 +39,7 @@ const getLink = async (articleUrl, linkIndex) => {
     if (links.length === 0 || linkIndex >= links.length) return null;
     const linkElement = links[linkIndex];
     
+    // handle relative and top-level links
     return linkElement.getAttribute('href')?.startsWith('/') ?
       `https://en.wikipedia.org${linkElement.getAttribute('href')}` : 
       linkElement.getAttribute('href');
