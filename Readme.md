@@ -16,12 +16,12 @@ This simple script script will fetch links as strings from Wikipedia, and print 
 * The initial article will act as the starting point; the optional second argument (number) defines the depth that article links
 will be followed for, while the optional third argument (number) defines the breadth (i.e., how many follow-up links to print from each article).
 
-* A fourth argument (number) can be used to specify the indentation of each tier of printed links. By default, the amount of indent spaces is 2.
+* A fourth argument (number) can be used to specify the indentation of each tier of printed links. By default, the amount of indent-spaces is 2.
 
 ### Example
 
 node index.js Light 2 3
-
+```
 Light
   Electromagnetic_radiation
     Linear_polarization
@@ -35,7 +35,7 @@ Light
     Linear_response_function
     Electric_susceptibility
     Electromagnetic_spectrum#Visible_radiation_(light)
-
+```
 ## Limitations
 
 * The parsing of the fetched links is rudimentary and leads to abrupt halts or meta-elements being fetched sometimes.
