@@ -107,7 +107,7 @@ const verifyNumbers = (...args) => {
 const verifyMaxBounds = (linkDepth, linkBreadth) => {
   // the number of fetched articles grows exponentially
   if (linkBreadth ** linkDepth > MAX_LINKS) {
-    console.log(`Warning! Reducing parameters automatically due to excessive number of fetched articles (${MAX_LINKS}+)!`);
+    console.log(`Warning! Reducing arguments automatically due to excessive number of fetched articles (${MAX_LINKS}+)!`);
   }
   while (linkBreadth ** linkDepth > MAX_LINKS) {
     linkDepth >= linkBreadth ? linkDepth-- : linkBreadth--
