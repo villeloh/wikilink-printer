@@ -3,11 +3,22 @@ import { JSDOM } from 'jsdom';
 
 const BASE_URL = 'https://en.wikipedia.org/wiki/';
 const DEFAULT_INDENT_ADD = 2;
+const MAX_LINK_DEPTH = 10;
+const MAX_LINK_BREADTH = 10;
+const MAX_POWERED = 100; // max number of fetched articles
 
 // to avoid excessive requests (if we had a server running and not just a single file)
 const linkCache = {};
 
-// links contained in sidebars, image captions, etc are against the spirit of the challenge
+// links contained in sidebars, image captions, etc are against the spirit of the challenge.
+// NOTE: not totally reliable; some links will cause an abrupt halt, while others will still 
+// print meta-elements
+/**
+ * Filters out non-body elements from an array of link elements.
+ *
+ * @param {NodeList} linkElements - List of link elements to filter.
+ * @returns {Array} - Filtered array of link elements.
+ */
 const filterNonBodyElements = (linkElements) => {
   if (!linkElements) return null
   
@@ -20,6 +31,10 @@ const filterNonBodyElements = (linkElements) => {
         'Wikipedia:',
         '#cite',
         'Help:',
+        'Special:',
+        'https://',
+        'php?',
+        'wikimedia.',
     ];
     const parentElements = [
         linkEl.closest('figcaption'),
@@ -34,6 +49,13 @@ const filterNonBodyElements = (linkElements) => {
   });
 };
 
+/**
+ * Fetches and extracts a Wikipedia link from an article URL.
+ *
+ * @param {string} articleUrl - URL of the Wikipedia article.
+ * @param {number} linkIndex - Index of the link to fetch.
+ * @returns {string|null} - Extracted link or null if not found.
+ */
 const getWikiLink = async (articleUrl, linkIndex) => {
   try {
     let linkElements;
@@ -62,12 +84,15 @@ const getWikiLink = async (articleUrl, linkIndex) => {
     const cleanedLink = link?.startsWith('/wiki/') ? link.substring(6) : link;
     return cleanedLink;
   } catch (error) {
-    console.error(`Failed to fetch Wiki article: ${error}`)
+    // unfollowable link is considered an error, which we don't want
+    if (error.code !== '404') {
+      console.error(`Failed to fetch Wiki article: ${error}`)
+    }
     return null;
   }
 };
 
-const printLink = (link, indentation) => {
+const printIndentedLink = (link, indentation) => {
   const spaces = ' '.repeat(indentation);
   console.log(`${spaces}${link}`);
 };
@@ -81,8 +106,35 @@ const verifyNumbers = (...args) => {
   return args.every(arg => typeof arg === 'number');
 };
 
+const verifyMaxBounds = (linkDepth, linkBreadth) => {
+  if (linkDepth > MAX_LINK_DEPTH) {
+    linkDepth = MAX_LINK_DEPTH;
+    console.log(`Warning! Max link depth exceeded; setting link depth to MAX value (${MAX_LINK_DEPTH}).`);
+  }
+  if (linkBreadth > MAX_LINK_BREADTH) {
+    linkBreadth = MAX_LINK_BREADTH;
+    console.log(`Warning! Max link breadth exceeded; setting link breadth to MAX value (${MAX_LINK_BREADTH}).`);
+  }
+  // the number of fetched articles grows exponentially
+  if (linkBreadth ** linkDepth > MAX_POWERED) {
+    console.log('Warning! Reducing link breadth automatically due to excessive number of articles!');
+  }
+  while (linkBreadth ** linkDepth > MAX_POWERED) {
+    linkBreadth--; // it is more granular to reduce the breadth
+  }
+  return { boundedDepth: linkDepth, boundedBreadth: linkBreadth };
+};
+
 let firstCall = true;
-const printLinkTree = async (articleUrl, linkDepth = 1, linkBreadth = 1, indentation) => {
+/**
+ * Prints a tree of Wikipedia links starting from a given article URL.
+ *
+ * @param {string} articleUrl - URL of the Wikipedia article.
+ * @param {number} linkDepth - Depth of link traversal.
+ * @param {number} linkBreadth - Breadth of link traversal.
+ * @param {number} indentation - Number of spaces for indentation.
+ */
+const printLinkTree = async (articleUrl, linkDepth = 2, linkBreadth = 3, indentation) => {
   if (firstCall) {
     // we always start the printout from the left edge
     indentation = 0;
@@ -96,15 +148,17 @@ const printLinkTree = async (articleUrl, linkDepth = 1, linkBreadth = 1, indenta
     console.error('Error! Arguments after the first one must be numbers.');
     return;
   }
-  printLink(articleUrl, indentation);
-  
-  if (linkDepth <= 0) return;
+  const { boundedDepth, boundedBreadth } = verifyMaxBounds(linkDepth, linkBreadth);
 
-  for (let i = 0; i < linkBreadth; i++) {
+  printIndentedLink(articleUrl, indentation);
+  
+  if (boundedDepth <= 0) return;
+
+  for (let i = 0; i < boundedBreadth; i++) {
     const wikiArticle = await getWikiLink(articleUrl, i);
 
     if (wikiArticle) { 
-      await printLinkTree(wikiArticle, linkDepth - 1, linkBreadth, indentation + indentAddition);
+      await printLinkTree(wikiArticle, boundedDepth - 1, boundedBreadth, indentation + indentAddition);
      } else { 
       break; 
     }
