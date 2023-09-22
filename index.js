@@ -3,9 +3,7 @@ import { JSDOM } from 'jsdom';
 
 const BASE_URL = 'https://en.wikipedia.org/wiki/';
 const DEFAULT_INDENT_ADD = 2;
-const MAX_LINK_DEPTH = 10;
-const MAX_LINK_BREADTH = 10;
-const MAX_POWERED = 100; // max number of fetched articles
+const MAX_LINKS = 100; // max number of fetched articles
 
 // to avoid excessive requests (if we had a server running and not just a single file)
 const linkCache = {};
@@ -107,20 +105,12 @@ const verifyNumbers = (...args) => {
 };
 
 const verifyMaxBounds = (linkDepth, linkBreadth) => {
-  if (linkDepth > MAX_LINK_DEPTH) {
-    linkDepth = MAX_LINK_DEPTH;
-    console.log(`Warning! Max link depth exceeded; setting link depth to MAX value (${MAX_LINK_DEPTH}).`);
-  }
-  if (linkBreadth > MAX_LINK_BREADTH) {
-    linkBreadth = MAX_LINK_BREADTH;
-    console.log(`Warning! Max link breadth exceeded; setting link breadth to MAX value (${MAX_LINK_BREADTH}).`);
-  }
   // the number of fetched articles grows exponentially
-  if (linkBreadth ** linkDepth > MAX_POWERED) {
-    console.log('Warning! Reducing link breadth automatically due to excessive number of fetched articles!');
+  if (linkBreadth ** linkDepth > MAX_LINKS) {
+    console.log(`Warning! Reducing parameters automatically due to excessive number of fetched articles (${MAX_LINKS}+)!`);
   }
-  while (linkBreadth ** linkDepth > MAX_POWERED) {
-    linkBreadth--; // it is more granular to reduce the breadth
+  while (linkBreadth ** linkDepth > MAX_LINKS) {
+    linkDepth >= linkBreadth ? linkDepth-- : linkBreadth--
   }
   return { boundedDepth: linkDepth, boundedBreadth: linkBreadth };
 };
