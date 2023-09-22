@@ -11,7 +11,7 @@ This simple script script will fetch links as strings from Wikipedia, and print 
 
 ## Running
 
-* Run the command 'node index.js articleName' in the project folder, replacing 'articleName' with a Wikipedia article's link url.
+* Run the command 'node index.js &lt;articleName&gt;' in the project folder, replacing 'articleName' with a Wikipedia article's link url.
 
 * The initial article will act as the starting point; the optional second argument (number) defines the depth that article links
 will be followed for, while the optional third argument (number) defines the breadth (i.e., how many follow-up links to print from each article).
