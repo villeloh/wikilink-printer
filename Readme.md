@@ -14,7 +14,7 @@ This simple script script will fetch links as strings from Wikipedia, and print 
 * Run the command 'node index.js &lt;articleName&gt;' in the project folder, replacing 'articleName' with a Wikipedia article's link url.
 
 * The initial article will act as the starting point; the optional second argument (number) defines the depth that article links
-will be followed for, while the optional third argument (number) defines the breadth (i.e., how many follow-up links to print from each article).
+will be followed to, while the optional third argument (number) defines the breadth (i.e., how many follow-up links to print from each article).
 
 * A fourth argument (number) can be used to specify the indentation of each tier of printed links. By default, the amount of indent-spaces is 2.
 
