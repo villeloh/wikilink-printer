@@ -117,7 +117,7 @@ const verifyMaxBounds = (linkDepth, linkBreadth) => {
   }
   // the number of fetched articles grows exponentially
   if (linkBreadth ** linkDepth > MAX_POWERED) {
-    console.log('Warning! Reducing link breadth automatically due to excessive number of articles!');
+    console.log('Warning! Reducing link breadth automatically due to excessive number of fetched articles!');
   }
   while (linkBreadth ** linkDepth > MAX_POWERED) {
     linkBreadth--; // it is more granular to reduce the breadth
